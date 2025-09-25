@@ -37,4 +37,16 @@ public class PacienteService {
                         p.getId(), p.getNome(),
                         p.getCpf().getValue(), p.getEmail().getValue()));
     }
+
+    @Transactional(readOnly = true)
+public PacienteResponseDTO buscarPorCpf(String cpf) {
+    Paciente paciente = repo.findByCpfValue(cpf)
+        .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
+    return new PacienteResponseDTO(
+        paciente.getId(),
+        paciente.getNome(),
+        paciente.getCpf().getValue(),
+        paciente.getEmail().getValue()
+    );
+}
 }

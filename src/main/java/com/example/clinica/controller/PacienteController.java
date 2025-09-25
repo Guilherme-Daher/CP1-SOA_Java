@@ -35,4 +35,12 @@ public class PacienteController {
     public Page<PacienteResponseDTO> listar(@ParameterObject Pageable pageable) {
         return service.listar(pageable);
     }
+
+    @Operation(summary = "Busca paciente por CPF")
+@GetMapping("/cpf/{cpf}")
+public ResponseEntity<PacienteResponseDTO> buscarPorCpf(@PathVariable String cpf) {
+    return ResponseEntity.ok(service.buscarPorCpf(cpf));
+}
+
+
 }

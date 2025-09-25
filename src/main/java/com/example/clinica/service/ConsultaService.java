@@ -10,6 +10,8 @@ import com.example.clinica.repository.ConsultaRepository;
 import com.example.clinica.repository.MedicoRepository;
 import com.example.clinica.repository.PacienteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,32 +24,65 @@ public class ConsultaService {
     private final MedicoRepository medicoRepository;
 
     @Transactional
-    public ConsultaResponseDTO agendar(ConsultaCreateDTO consultaCreateDTO) {
-        Paciente paciente = pacienteRepository.findById(consultaCreateDTO.pacienteId())
+    public ConsultaResponseDTO agendar(ConsultaCreateDTO dto) {
+        Paciente paciente = pacienteRepository.findById(dto.pacienteId())
                 .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado"));
-        Medico medico = medicoRepository.findById(consultaCreateDTO.medicoId())
+
+        Medico medico = medicoRepository.findById(dto.medicoId())
                 .orElseThrow(() -> new IllegalArgumentException("Médico não encontrado"));
 
-        // Melhoria implementada: Validação de agendamento
-        if (consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), consultaCreateDTO.dataHora())) {
+        if (consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora())) {
             throw new IllegalArgumentException("Médico já possui uma consulta agendada para este horário");
         }
 
-        Consulta consulta = new Consulta();
-        consulta.setPaciente(paciente);
-        consulta.setMedico(medico);
-        consulta.setDataHora(consultaCreateDTO.dataHora());
-        consulta.setStatus(StatusConsulta.AGENDADA);
+        Consulta consulta = Consulta.builder()
+                .paciente(paciente)
+                .medico(medico)
+                .dataHora(dto.dataHora())
+                .status(StatusConsulta.AGENDADA)
+                .build();
+
         consulta = consultaRepository.save(consulta);
 
-        return new ConsultaResponseDTO(consulta.getId(), consulta.getPaciente().getId(), consulta.getMedico().getId(), consulta.getDataHora(), consulta.getStatus());
+        return new ConsultaResponseDTO(
+                consulta.getId(),
+                consulta.getPaciente().getId(),
+                consulta.getMedico().getId(),
+                consulta.getDataHora(),
+                consulta.getStatus()
+        );
     }
 
     @Transactional
     public void cancelar(Long id) {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Consulta não encontrada"));
+
         consulta.setStatus(StatusConsulta.CANCELADA);
         consultaRepository.save(consulta);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ConsultaResponseDTO> listar(Pageable pageable) {
+        return consultaRepository.findAll(pageable)
+                .map(c -> new ConsultaResponseDTO(
+                        c.getId(),
+                        c.getPaciente().getId(),
+                        c.getMedico().getId(),
+                        c.getDataHora(),
+                        c.getStatus()
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ConsultaResponseDTO> listarPorMedico(Long medicoId, Pageable pageable) {
+        return consultaRepository.findByMedicoId(medicoId, pageable)
+                .map(c -> new ConsultaResponseDTO(
+                        c.getId(),
+                        c.getPaciente().getId(),
+                        c.getMedico().getId(),
+                        c.getDataHora(),
+                        c.getStatus()
+                ));
     }
 }

@@ -7,6 +7,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -34,4 +37,18 @@ public class ConsultaController {
         consultaService.cancelar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Lista todas as consultas com paginação")
+@GetMapping
+public ResponseEntity<Page<ConsultaResponseDTO>> listar(Pageable pageable) {
+    return ResponseEntity.ok(consultaService.listar(pageable));
+}
+
+
+@Operation(summary = "Lista consultas por médico")
+@GetMapping("/medico/{id}")
+public ResponseEntity<Page<ConsultaResponseDTO>> listarPorMedico(@PathVariable Long id, Pageable pageable) {
+    return ResponseEntity.ok(consultaService.listarPorMedico(id, pageable));
+}
+
 }
